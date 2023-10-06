@@ -1,5 +1,7 @@
 # BrainLM
 
+[![Preprint License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+
 Pytorch implementation of Brain Language Model (BrainLM), aiming to achieve a general understanding of brain dynamics through self-supervised masked prediction. 
 ![Alt text](/figures/brainlm_overview.png)
 
