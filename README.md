@@ -36,6 +36,9 @@ Datasets are available on shared storage. Ask Syed or Antonio for more details.
 
 To train a model on Yale HPC, see the example HPC job submission script in ```scripts/train_brainlm_mae.sh```.
 
+# Pre-trained model
+
+The weights for our pre-trained model can be downloaded from [huggingface](https://huggingface.co/vandijklab/brainlm/tree/main/checkpoint)
 
 # Manual Environment Creation
 If the `environment.yml` file does not successfully recreate the environment for you, you can follow the below steps to install the major packages needed for this project:
