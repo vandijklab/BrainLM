@@ -13,11 +13,10 @@ git clone https://github.com/vandijklab/BrainLM.git
 ```
 
 
-Create an Anaconda environment from the `environment.yml` file using:
+Create an Anaconda environment by running the setup file:
 
 ```
-conda env create --file environment.yml
-conda activate brainlm
+sh setup.sh
 ```
 
 And check the installation of major packages (Pytorch, Pytorch GPU-enabled, huggingface) by running these lines in a terminal:
@@ -31,6 +30,14 @@ python -c "from transformers import pipeline; print(pipeline('sentiment-analysis
 
 Datasets are available on shared storage. Ask Syed or Antonio for more details.
 
+# Data Preprocessing
+
+Checkout first 3 cells of brainlm_tutorial.ipynb for preprocessing data. Some are processed differently than others and might require changes to the script located at toolkit/BrainLM-Toolkit.py, mostly transposing the matrix.
+
+# Running Inference 
+
+brainlm_tutorial.ipynb provides a pipeline for zero-shot predictions. Models can be downloaded from [HF repo](https://huggingface.co/vandijklab/brainlm/) which includes both 111M and 650M param models. We're still working to release the finetuned models.
+
 
 # Training Models
 
@@ -38,28 +45,8 @@ To train a model on Yale HPC, see the example HPC job submission script in ```sc
 
 # Pre-trained model
 
-The weights for our pre-trained model can be downloaded from [huggingface](https://huggingface.co/vandijklab/brainlm/tree/main/checkpoint)
+The weights for our pre-trained model can be downloaded from [huggingface](https://huggingface.co/vandijklab/brainlm/)
 
-# Manual Environment Creation
-If the `environment.yml` file does not successfully recreate the environment for you, you can follow the below steps to install the major packages needed for this project:
+# Environment Creation
 
-1. Create and activate an anaconda environment with Python version 3.8:
-```
-conda create -n brainlm python=3.8
-conda activate brainlm
-```
-
-2. Install Pytorch: `conda install pytorch==1.12.0 torchvision==0.13.0 cudatoolkit=11.3 -c pytorch`
-3. Install latest huggingface version: `pip install git+https://github.com/huggingface/transformers`
-
-4. Install Huggingface datasets: `conda install -c huggingface datasets`
-
-5. Install Pandas, Seaborn, and Matplotlib: `conda install pandas seaborn`
-
-6. Install Weights & Biases: `conda install -c conda-forge wandb`
-
-7. Install AnnData: `pip install anndata==0.8.0`
-
-8. Install UMAP: `pip install umap-learn`
-
-9. Install Pytest: `conda install -c anaconda pytest`
+You'll probably need a separate environment to run larger models (111M and 650M), both of which require flash attention which can be tricky to install. Just run setup.sh to setup the environment.
