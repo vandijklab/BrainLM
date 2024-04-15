@@ -101,7 +101,6 @@ def convert_to_arrow_datasets(args, save_path):
             --uk_biobank_dir
             --arrow_dataset_save_directory
             --dataset_name
-            --normalization_info_file
         save_path: concatenation of dataset save directory and arrow dataset name
     """
     # --- Train/val/test Split ---#
@@ -118,6 +117,61 @@ def convert_to_arrow_datasets(args, save_path):
 
     train_split_idx = len(all_dat_files)
     train_files = all_dat_files[:train_split_idx]
+    sh_35 = 0
+    sh_less_200 = 0
+    for idx,file in enumerate(tqdm(all_dat_files)):
+        try:
+            sample = np.loadtxt(os.path.join(args["uk_biobank_dir"],file)).T #490, 424
+            if sample.shape[0] < 200:
+                print(sample.shape, idx, "ommitted due to insufficient data")
+                sh_less_200 += 1
+            else:
+                sh_35 += 1
+            # print(sample.shape)
+        except UnicodeDecodeError:
+            print(file)
+        
+
+    print(f"Not processing {sh_less_200} files due to insufficient fMRI data")
+    compute_Stats=True
+    if compute_Stats: 
+        num_files = sh_35 #len(all_dat_files_rs) + len(all_dat_files_tf)
+        all_stds = np.zeros([num_files, 424]) 
+        all_data = np.empty([num_files*200, 424])
+        for idx,file in enumerate(tqdm(train_files)):
+            if idx == num_files:
+                break
+            # if idx%2000==0:
+            #     print('idx: {}, next file: {}'.format(idx,file))
+            try:
+                sample = np.loadtxt(os.path.join(args["uk_biobank_dir"],file)) #490, 424
+                # print(sample.shape)
+            except UnicodeDecodeError:
+                print(file)
+            # sample = np.loadtxt(os.path.join(uk_biobank_dir_rs, file, 'rfMRI_REST','rfMRI_REST_Atlas_MSMAll_hp2000_clean_MGTR_zscored_HCP_MMP_BNAC.dat')).astype(np.float32).T
+            sample_mean = sample.mean(axis=0, keepdims=True)
+            sample_mean = sample_mean[None,:].repeat(sample.shape[0],1).squeeze()
+            sample = sample - sample_mean
+
+            idx_sample=idx
+
+
+            if sample.shape[0] < 200:
+                continue
+            try:
+                all_data[idx*200:(idx+1)*200,:] = sample[:200,:]
+            except ValueError:
+                print(sample.shape)
+                print('idx: {}, idx_sample: {}'.format(idx,idx_sample))
+
+        global_std = np.std(all_data, axis=0) 
+        data_median_per_voxel = np.median(all_data,axis=0)
+        data_mean_per_voxel = np.mean(all_data,axis=0)
+
+        all_data_nonzeros = np.copy(all_data)
+        all_data_nonzeros[all_data_nonzeros == 0] = 'nan'
+        quartiles = np.nanpercentile(all_data_nonzeros, [25, 75], axis=0)
+        IQR = quartiles[1,:]-quartiles[0,:]
 
 
     # --- Normalization Calculations ---#
@@ -165,21 +219,24 @@ def convert_to_arrow_datasets(args, save_path):
         "Patient ID": [],
     }
 
-    with open(args["normalization_info_file"], "rb") as input_file:
-        normalization_info_dataset_v3 = pickle.load(input_file)
-
     for filename in tqdm(train_files, desc="Normalizing Data"):
         dat_arr = np.loadtxt(os.path.join(args["uk_biobank_dir"], filename)).astype(
             np.float32
-        )
-        dat_arr = dat_arr.T
+        ).T
+
+        if dat_arr.shape[0] < 200:
+            continue
+
+        if dat_arr.shape[0] > 424:
+            dat_arr = dat_arr[:350, :]
+
         global_norm_dat_arr = np.copy(dat_arr)
         per_patient_all_voxels_norm_dat_arr = np.copy(dat_arr)
         per_patient_per_voxel_norm_dat_arr = np.copy(dat_arr)
         per_voxel_all_patient_norm_dat_arr = np.copy(dat_arr)
         recording_mean_subtracted = np.copy(dat_arr)
         recording_mean_subtracted2 = np.copy(dat_arr)
-        recording_mean_subtracted3 = np.copy(dat_arr)
+        recording_mean_subtracted3 = np.copy(dat_arr.T)
         global_std = 41.44047  # calculated in normalization notebook
         _99th_percentile = 111.13143061224855  # calculated externally
 
@@ -189,7 +246,6 @@ def convert_to_arrow_datasets(args, save_path):
                 global_train_max - global_train_min
             )
 
-        print("Print data array: ", dat_arr.shape)
         # Per patient all voxel normalization
         patient_all_voxel_min_val = np.min(per_patient_all_voxels_norm_dat_arr)
         patient_all_voxel_max_val = np.max(per_patient_all_voxels_norm_dat_arr)
@@ -238,17 +294,8 @@ def convert_to_arrow_datasets(args, save_path):
             )
         
         #Voxelwise Robust Scaler Normalization
-        recording_mean_subtracted3 = (
-            recording_mean_subtracted3 -
-            normalization_info_dataset_v3['data_median_per_voxel'][:, np.newaxis]
-        ) / normalization_info_dataset_v3['IQR'][:, np.newaxis]
-
-        for idx_voxel in range(recording_mean_subtracted3.shape[1]):
-            recording_mean_subtracted3[:, idx_voxel] = np.clip(
-                    recording_mean_subtracted3[:, idx_voxel],
-                    normalization_info_dataset_v3['_1th_percentile_per_voxel_robustScaling'],
-                    normalization_info_dataset_v3['_99th_percentile_per_voxel_robustScaling']
-        )
+        recording_mean_subtracted3 = recording_mean_subtracted3 - recording_mean_subtracted3.mean(axis=0)
+        recording_mean_subtracted3 = (recording_mean_subtracted3 - data_median_per_voxel / IQR)
 
         _99th_global_recording = np.divide(recording_mean_subtracted2, _99th_percentile)
 
