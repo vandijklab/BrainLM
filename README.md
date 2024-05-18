@@ -28,7 +28,7 @@ python -c "from transformers import pipeline; print(pipeline('sentiment-analysis
 
 # Datasets
 
-Datasets are available on shared storage. Ask Syed or Antonio for more details.
+The UK Biobank dataset, used for pretraining BrainLM, has a data sharing agreement which does not allow for direct public sharing of the dataset. To get access, you can apply to the UK Biobank for access to their fMRI data, and follow their preprocessing pipeline (https://www.fmrib.ox.ac.uk/ukbiobank/fbp/) followed by using our preprocessing scripts (https://github.com/vandijklab/BrainLM/blob/main/toolkit/BrainLM_Tutorial.ipynb) to arrive at the same data.
 
 # Data Preprocessing
 
